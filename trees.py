@@ -50,6 +50,10 @@ class BinaryTree:
         return str({self.root: (self.val, self.up, self.down)})
 
     def __repr__(self):
+        # couldn't recreate tree from str. Many assumptions would have to be made. Idea is to have a small 1 year tree
+        # that can be expanded with a good deal of freedom... in fact up factor from 1 year to another could differe, it
+        # suffices to insert a new tree with new parameters at the end of a previous one. but such tree would require
+        # different rates at different periods during discount. a list would suffice
         return str(self)
 
     def discount(self, p, r):
@@ -59,6 +63,8 @@ class BinaryTree:
         :param r: rate of interest
         :return: (1/(1+r))*Expected value
         '''
+        assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
+        assert (p >= 0 and r <= 1), "Please provide a valid probability"
         return (1/(1+r))*(p*self.up.get('val') + (1-p)*self.down.get('val'))
 
     def find(self, node):
@@ -134,19 +140,53 @@ class BinaryTree:
                 cursor = cursor.up
         return len(path) + 1
 
-    def real_discount(self, N):
+    def real_discount(self, N, p, r):
         '''
         computes discount from a certain time to present. N should be at least 1 that is. But less than or equal
         to tree depth. Keep in mind this can be useful for options. It is possible to create properties called
         European_call, European_put etc... that use this type of discount function. American options would require
-        special handling.
-        :param N: period we want to discount from
+        special handling. Note that this function is really useful when only the end nodes are known.
+        By using symbolic python or even bogus placeholder for all other nodes except the last ones, we can discount to
+        the present and obtain the true present value. In fact, if one can build a binomial tree using the stock_progress
+        function and only update all the last nodes to values of an option, one can discount all of it to the present!
+        
+        :param N: period we want to discount from. [equal to depth at the moment, future work: N can be less than depth]
+        :param p: probability of up
+        :param r: rate of interest, could be an integer (or a list: future work) of size N! r should probably be restricted to 0 < r < 1
         :return: present value
         '''
         assert (isinstance(N, int)), "Number of years (periods) must be an integer"
-        assert (N > 0), "Discount from at least one year in the future"
-        assert (N <= self.depth()), "Cannot discount from years past current tree depth"
-        pass
+        # assert (N > 0), "Discount from at least one year in the future"
+        # assert (N <= self.depth()), "Cannot discount from years past current tree depth"
+        assert (N == self.depth()), "N must match number of years(periods) in tree"
+        assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
+        assert (p >= 0 and r <= 1), "Please provide a valid probability"
+        if N == 1:
+            return self.discount(p, r)
+        from itertools import product
+        from copy import deepcopy
+        temp = deepcopy(self) # avoid changing the initial tree: inspect input tree, if any bug occurs, fix it
+        for step in range(N,0,-1):
+            paths = product('HT', repeat = step)
+            paths = [''.join(node) for node in paths] # goal is to collapse trees until we get a 1 period tree
+            # so we will have to use the exec() again. could create a function that updates a given node but this sort
+            # of freedom could be problematic. so no...
+            # thanks to itertool, we can advance through the list by pair, i.e. each group of 2 has the same parent node
+            length = len(paths)
+            for ind in range(0,length,2):
+                parent_node = paths[ind][0:-1]
+                vals_up = temp.find(parent_node).up.get('val') # since each tree is collapsed to a dictionary, this is ok
+                vals_down = temp.find(parent_node).down.get('val')
+                disc_val = (1/(1+r))*(p*vals_up + (1-p)*vals_down) # discounted value
+                temp_dict = {'root':parent_node, 'val':disc_val}
+                cursor = 'temp'
+                for root in parent_node:
+                    if root == 'H':
+                        cursor += '.up'
+                    else:
+                        cursor += '.down'
+                exec(cursor + ' = temp_dict')
+        return temp.discount(p, r)
 
 
 def stock_progress(S_0, u, d, N):
@@ -180,13 +220,15 @@ a.insert('TH', up_factor = 2, down_factor = .5)
 a.insert('TT', up_factor = 2, down_factor = .5)
 
 print(a)
-print(a.find('HH'))
-print(a.find('HT'))
-print(a.find('TH'))
-print(a.find('TT'))
-print(a.depth())
+# print(a.find('HH'))
+# print(a.find('HT'))
+# print(a.find('TH'))
+# print(a.find('TT'))
+# print(a.depth())
+print(a.real_discount(3, .4, .1))
+print(a)
 
-b = stock_progress(12,2,.5,3)
-print(b)
-print(b.depth())
+# b = stock_progress(12,2,.5,3)
+# print(b)
+# print(b.depth())
 # might consider creating an equal property for trees, in fact this could be easy if itertools is used again
