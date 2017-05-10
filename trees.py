@@ -231,20 +231,6 @@ class BDTTree(BinaryTree):
     '''
     This is an extension of the regular BinaryTree except that the discount functions are rewritten
     '''
-    def discount(self, p = .5, r = None):
-        '''
-        This is for a 1 period model only. We assume a valid BDT tree i.e. Tree of rates
-        We never need a new r, so this parameter from the superclass is set to None.
-        Never use this for a tree, this is the same as the original, only difference is that
-        r is not specified.
-        Note that this function should only be used when the up and down nodes are already of the form
-        1/(1+r)! so Bond values being discounted here.
-        :param p: The probability of up, in BDT always 1/2
-        :return: a discounted value for the BDT tree
-        '''
-        assert (p >= 0 and p <= 1), "Please provide a valid probability"
-        return (1/(1+self.val))*(p*self.up.get('val') + (1-p)*self.down.get('val'))
-
     def real_discount(self, N, p = .5, r = None, keep = True):
         '''
         same thing as original, but this is solely for a BDT tree of rates
@@ -289,7 +275,8 @@ class BDTTree(BinaryTree):
                 exec(cursor + ' = temp_dict')
         u = temp.up.get('val')
         d = temp.down.get('val')
-        return temp.discount()
+        r = temp.val
+        return (1/(1+r))*(p*u + (1-p)*d)
 
 def stock_progress(S_0, u, d, N):
     '''
@@ -333,13 +320,17 @@ def stock_progress(S_0, u, d, N):
 b = stock_progress(12,2,.5,1)
 c = stock_progress(12,2,.5,3)
 d = c.cut(1)
-e = BDTTree('R',.09,up_value=.126,down_value=.093)
-e.insert('H',up_value=.172,down_value=.135)
-e.insert('T',up_value=.135,down_value=.106)
-print(b)
-print(c)
-print(d)
+e = BDTTree('R',.1,up_value=.1432,down_value=.0979)
+e.insert('H',up_value=.1942,down_value=.1377)
+e.insert('T',up_value=.1377,down_value=.0976)
+e.insert('HH',up_value=.2179,down_value=.1606)
+e.insert('HT',up_value=.1606,down_value=.1183)
+e.insert('TH',up_value=.1606,down_value=.1183)
+e.insert('TT',up_value=.1183,down_value=.0872)
+# print(b)
+# print(c)
+# print(d)
 # print(c.real_discount(2, .4, .1))
 print(e)
-print(e.real_discount(2))
+print(e.real_discount(3)**(-1/4) - 1)
 # might consider creating an equal property for trees, in fact this could be easy if itertools is used again
