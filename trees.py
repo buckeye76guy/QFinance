@@ -59,7 +59,8 @@ class BinaryTree:
     def discount(self, p, r):
         '''
         must be fixed to... if up is a tree, .get('val') can be an issue
-        Only on a one period model
+        Only on a one period model. This function is irrelvant but I'll leave it here.
+        simply avoid using this
         :param p: probability of up
         :param r: rate of interest
         :return: (1/(1+r))*Expected value
@@ -229,7 +230,8 @@ class BinaryTree:
 
 class BDTTree(BinaryTree):
     '''
-    This is an extension of the regular BinaryTree except that the discount functions are rewritten
+    This is an extension of the regular BinaryTree except that the discount functions are rewritten.
+    insert is fixed so that it allows each subtree to be BDTTree
     '''
 
     def insert(self, node, **kwargs):

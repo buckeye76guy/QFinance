@@ -72,8 +72,7 @@ def bdt(Yield, Volatility):
     eqn9 = -2*sig + sp.log(yield_rates[0]/yield_rates[1])
 
     j = 4
-    y, sig = Yield[j], Volatility[j]
-    # now there are three ways of using each of the intermediary rates
+    y, sig = Yield[j], Volatility[j] # y for yield, sig for volatility
     disc_val = bT.real_discount(4)
     eqn10 = -(1/(1+y)**(j+1)) + disc_val
     eqn11 = -r_uuud + sp.sqrt(r_uuuu*r_uudd)
