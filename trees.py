@@ -59,6 +59,7 @@ class BinaryTree:
     def discount(self, p, r):
         '''
         must be fixed to... if up is a tree, .get('val') can be an issue
+        Only on a one period model
         :param p: probability of up
         :param r: rate of interest
         :return: (1/(1+r))*Expected value
@@ -140,7 +141,41 @@ class BinaryTree:
                 cursor = cursor.up
         return len(path) + 1
 
-    def real_discount(self, N, p, r):
+    def cut(self, n, keep = True):
+        '''
+        :param n: number of periods where to cut the tree
+        :return: a new tree with n periods. It would be easy to have a get_up and get_down factors method,
+        then simply recreate a tree using these factors. But this will limit some freedom
+        :param keep: if this is true, use deepcopy. if not, create a completely different copy
+        keep is only now used because having two copies of the same tree may not be good for memory
+        '''
+        assert (isinstance(n, int)), "Number of years (periods) must be an integer"
+        assert (n > 0), "Discount from at least one year in the future"
+        assert (n <= self.depth()), "Cannot discount from years past current tree depth"
+        N = self.depth()
+        if n == N:
+            return self
+        from itertools import product
+        from copy import deepcopy
+        if keep:
+            temp = deepcopy(self)  # avoid changing the initial tree: inspect input tree, if any bug occurs, fix it
+        else:
+            temp = self
+        paths = product('HT', repeat = n)
+        paths = [''.join(node) for node in paths]
+        for path in paths:
+            cursor = 'temp'
+            for root in path:
+                if root == 'H':
+                    cursor += '.up'
+                else:
+                    cursor += '.down'
+            val = eval(cursor + '.val')
+            mydict = {'root':path, 'val':val}
+            exec(cursor + '= mydict')
+        return temp
+
+    def real_discount(self, N, p, r, keep = True):
         '''
         computes discount from a certain time to present. N should be at least 1 that is. But less than or equal
         to tree depth. Keep in mind this can be useful for options. It is possible to create properties called
@@ -150,22 +185,21 @@ class BinaryTree:
         the present and obtain the true present value. In fact, if one can build a binomial tree using the stock_progress
         function and only update all the last nodes to values of an option, one can discount all of it to the present!
         
-        :param N: period we want to discount from. [equal to depth at the moment, future work: N can be less than depth]
+        :param N: period we want to discount from. [equal to depth at the moment, future work: N can be less than depth! done]
         :param p: probability of up
         :param r: rate of interest, could be an integer (or a list: future work) of size N! r should probably be restricted to 0 < r < 1
+        :param keep: if this is true, use deepcopy. if not, create a completely different copy
         :return: present value
         '''
         assert (isinstance(N, int)), "Number of years (periods) must be an integer"
         # assert (N > 0), "Discount from at least one year in the future"
         # assert (N <= self.depth()), "Cannot discount from years past current tree depth"
-        assert (N == self.depth()), "N must match number of years(periods) in tree"
+        assert (N <= self.depth()), "N must match number of years(periods) in tree: edit: N <= depth"
         assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
         assert (p >= 0 and r <= 1), "Please provide a valid probability"
-        if N == 1:
-            return self.discount(p, r)
         from itertools import product
-        from copy import deepcopy
-        temp = deepcopy(self) # avoid changing the initial tree: inspect input tree, if any bug occurs, fix it
+        temp = self.cut(N, keep)
+
         for step in range(N,0,-1):
             paths = product('HT', repeat = step)
             paths = [''.join(node) for node in paths] # goal is to collapse trees until we get a 1 period tree
@@ -211,24 +245,28 @@ def stock_progress(S_0, u, d, N):
             tree.insert(node, up_factor = u, down_factor = d)
     return tree
 
-a = BinaryTree('R', 12, up_value=24, down_value=6)
-a.insert('H', up_factor = 2, down_factor = .5)
-a.insert('T', up_factor = 2, down_factor = .5)
-a.insert('HH', up_factor = 2, down_factor = .5)
-a.insert('HT', up_factor = 2, down_factor = .5)
-a.insert('TH', up_factor = 2, down_factor = .5)
-a.insert('TT', up_factor = 2, down_factor = .5)
+# a = BinaryTree('R', 12, up_value=24, down_value=6)
+# a.insert('H', up_factor = 2, down_factor = .5)
+# a.insert('T', up_factor = 2, down_factor = .5)
+# a.insert('HH', up_factor = 2, down_factor = .5)
+# a.insert('HT', up_factor = 2, down_factor = .5)
+# a.insert('TH', up_factor = 2, down_factor = .5)
+# a.insert('TT', up_factor = 2, down_factor = .5)
 
-print(a)
+# print(a)
 # print(a.find('HH'))
 # print(a.find('HT'))
 # print(a.find('TH'))
 # print(a.find('TT'))
 # print(a.depth())
-print(a.real_discount(3, .4, .1))
-print(a)
+# print(a.real_discount(3, .4, .1))
+# print(a)
 
-# b = stock_progress(12,2,.5,3)
-# print(b)
-# print(b.depth())
+b = stock_progress(12,2,.5,1)
+c = stock_progress(12,2,.5,3)
+d = c.cut(1)
+print(b)
+print(c)
+print(d)
+print(c.real_discount(2, .4, .1))
 # might consider creating an equal property for trees, in fact this could be easy if itertools is used again
