@@ -65,7 +65,7 @@ class BinaryTree:
         :return: (1/(1+r))*Expected value
         '''
         assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
-        assert (p >= 0 and r <= 1), "Please provide a valid probability"
+        assert (p >= 0 and p <= 1), "Please provide a valid probability"
         return (1/(1+r))*(p*self.up.get('val') + (1-p)*self.down.get('val'))
 
     def find(self, node):
@@ -98,6 +98,12 @@ class BinaryTree:
         # assumption is that we are inserting a new tree, i.e. updating self_up from dict to tree
         # so make sure node is not already a tree
         # I can now use depth to make sure insertion works. i.e. if depth is not equal to len(node) etc...
+        '''
+        Need error checking still
+        :param node: 
+        :param kwargs: 
+        :return: 
+        '''
         assert (isinstance(node, str)), "Node must be a string!"
         for lt in node:
             if lt not in "HT":
@@ -192,11 +198,10 @@ class BinaryTree:
         :return: present value
         '''
         assert (isinstance(N, int)), "Number of years (periods) must be an integer"
-        # assert (N > 0), "Discount from at least one year in the future"
-        # assert (N <= self.depth()), "Cannot discount from years past current tree depth"
+        assert (N > 0), "Discount from at least one year in the future"
         assert (N <= self.depth()), "N must match number of years(periods) in tree: edit: N <= depth"
         assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
-        assert (p >= 0 and r <= 1), "Please provide a valid probability"
+        assert (p >= 0 and p <= 1), "Please provide a valid probability"
         from itertools import product
         temp = self.cut(N, keep)
 
@@ -222,6 +227,69 @@ class BinaryTree:
                 exec(cursor + ' = temp_dict')
         return temp.discount(p, r)
 
+class BDTTree(BinaryTree):
+    '''
+    This is an extension of the regular BinaryTree except that the discount functions are rewritten
+    '''
+    def discount(self, p = .5, r = None):
+        '''
+        This is for a 1 period model only. We assume a valid BDT tree i.e. Tree of rates
+        We never need a new r, so this parameter from the superclass is set to None.
+        Never use this for a tree, this is the same as the original, only difference is that
+        r is not specified.
+        Note that this function should only be used when the up and down nodes are already of the form
+        1/(1+r)! so Bond values being discounted here.
+        :param p: The probability of up, in BDT always 1/2
+        :return: a discounted value for the BDT tree
+        '''
+        assert (p >= 0 and p <= 1), "Please provide a valid probability"
+        return (1/(1+self.val))*(p*self.up.get('val') + (1-p)*self.down.get('val'))
+
+    def real_discount(self, N, p = .5, r = None, keep = True):
+        '''
+        same thing as original, but this is solely for a BDT tree of rates
+        can be used to compute yield. Subtrees will be binaryTrees and not BDTTrees.
+        This function discounts bond values by actually making sure that only the last nodes
+        are of the form F/(1+r), the subsequent are just (1+r) times the future values.
+        Use this on any type of tree!
+        :param N: 
+        :param p: 
+        :param r: 
+        :param keep: this should always be true for BDT
+        :return: 
+        '''
+        assert (isinstance(N, int)), "Number of years (periods) must be an integer"
+        assert (N > 0), "Discount from at least one year in the future"
+        assert (N <= self.depth()), "N must match number of years(periods) in tree: edit: N <= depth"
+        assert (p >= 0 and p <= 1), "Please provide a valid probability"
+        from itertools import product
+        temp = self.cut(N, keep)
+
+        for step in range(N, 0, -1):
+            paths = product('HT', repeat=step)
+            paths = [''.join(node) for node in paths]
+            length = len(paths)
+            for ind in range(0, length, 2):
+                parent_node = paths[ind][0:-1]
+                vals_up = temp.find(parent_node).up.get('val')
+                vals_down = temp.find(parent_node).down.get('val')
+                rate = temp.find(parent_node).val
+                if step == N:
+                    disc_val = (1/(1+rate))*(p/(1+vals_up) + (1-p)/(1+vals_down))
+                else:
+                    disc_val = (1/(1+rate))*(p*vals_up + (1-p)*vals_down)
+                temp_dict = {'root': parent_node, 'val': disc_val}
+                # print(temp_dict)
+                cursor = 'temp'
+                for root in parent_node:
+                    if root == 'H':
+                        cursor += '.up'
+                    else:
+                        cursor += '.down'
+                exec(cursor + ' = temp_dict')
+        u = temp.up.get('val')
+        d = temp.down.get('val')
+        return temp.discount()
 
 def stock_progress(S_0, u, d, N):
     '''
@@ -265,8 +333,13 @@ def stock_progress(S_0, u, d, N):
 b = stock_progress(12,2,.5,1)
 c = stock_progress(12,2,.5,3)
 d = c.cut(1)
+e = BDTTree('R',.09,up_value=.126,down_value=.093)
+e.insert('H',up_value=.172,down_value=.135)
+e.insert('T',up_value=.135,down_value=.106)
 print(b)
 print(c)
 print(d)
-print(c.real_discount(2, .4, .1))
+# print(c.real_discount(2, .4, .1))
+print(e)
+print(e.real_discount(2))
 # might consider creating an equal property for trees, in fact this could be easy if itertools is used again
