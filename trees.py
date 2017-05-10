@@ -231,10 +231,49 @@ class BDTTree(BinaryTree):
     '''
     This is an extension of the regular BinaryTree except that the discount functions are rewritten
     '''
+
+    def insert(self, node, **kwargs):
+        # assumption is that we are inserting a new tree, i.e. updating self_up from dict to tree
+        # so make sure node is not already a tree
+        # I can now use depth to make sure insertion works. i.e. if depth is not equal to len(node) etc...
+        '''
+        Need error checking still
+        :param node: 
+        :param kwargs: 
+        :return: 
+        '''
+        assert (isinstance(node, str)), "Node must be a string!"
+        for lt in node:
+            if lt not in "HT":
+                raise ValueError('Path must contain only "H" and "T".' + lt + ' is not valid.')
+        assert (self.depth() >= len(node)), "You can only insert a new tree at the end!" # could be better but...
+        if len(node) == 1:
+            if node == 'H':
+                val = self.up.get('val')
+                root = self.up.get('root')
+                self.up = BDTTree(root, val, **kwargs)
+            else:
+                val = self.down.get('val')
+                root = self.down.get('root')
+                self.down = BDTTree(root, val, **kwargs)
+        else:
+            cursor = 'self'
+            for root in node:
+                if root == 'H':
+                    cursor += '.up'
+                else:
+                    cursor += '.down'
+            # assuming errors are checked and node is reached, we upgrade it to binary tree
+            val = eval(cursor + ".get('val')") # because we only insert a tree at a node
+            # root = eval(cursor + ".get('root')")
+            # that was previously just a dictionary
+            exec(cursor + ' = BDTTree(node, val, **kwargs)')
+        return None
+
     def real_discount(self, N, p = .5, r = None, keep = True):
         '''
         same thing as original, but this is solely for a BDT tree of rates
-        can be used to compute yield. Subtrees will be binaryTrees and not BDTTrees.
+        can be used to compute yield.
         This function discounts bond values by actually making sure that only the last nodes
         are of the form F/(1+r), the subsequent are just (1+r) times the future values.
         Use this on any type of tree!
@@ -249,8 +288,15 @@ class BDTTree(BinaryTree):
         assert (N <= self.depth()), "N must match number of years(periods) in tree: edit: N <= depth"
         assert (p >= 0 and p <= 1), "Please provide a valid probability"
         from itertools import product
-        temp = self.cut(N, keep)
 
+        if N == 1:
+            temp = self.cut(1, keep)
+            u = temp.up.get('val')
+            d = temp.down.get('val')
+            r = temp.val
+            return (1 / (1 + r)) * (p/(1+u) + (1 - p)/(1+d))
+
+        temp = self.cut(N, keep)
         for step in range(N, 0, -1):
             paths = product('HT', repeat=step)
             paths = [''.join(node) for node in paths]
@@ -317,20 +363,24 @@ def stock_progress(S_0, u, d, N):
 # print(a.real_discount(3, .4, .1))
 # print(a)
 
-b = stock_progress(12,2,.5,1)
-c = stock_progress(12,2,.5,3)
-d = c.cut(1)
-e = BDTTree('R',.1,up_value=.1432,down_value=.0979)
-e.insert('H',up_value=.1942,down_value=.1377)
-e.insert('T',up_value=.1377,down_value=.0976)
-e.insert('HH',up_value=.2179,down_value=.1606)
-e.insert('HT',up_value=.1606,down_value=.1183)
-e.insert('TH',up_value=.1606,down_value=.1183)
-e.insert('TT',up_value=.1183,down_value=.0872)
+# b = stock_progress(12,2,.5,1)
+# c = stock_progress(12,2,.5,3)
+# d = c.cut(1)
+# e = BDTTree('R',.1,up_value=.1432,down_value=.0979)
+# e.insert('H',up_value=.1942,down_value=.1377)
+# e.insert('T',up_value=.1377,down_value=.0976)
+# e.insert('HH',up_value=.2179,down_value=.1606)
+# e.insert('HT',up_value=.1606,down_value=.1183)
+# e.insert('TH',up_value=.1606,down_value=.1183)
+# e.insert('TT',up_value=.1183,down_value=.0872)
 # print(b)
 # print(c)
 # print(d)
 # print(c.real_discount(2, .4, .1))
-print(e)
-print(e.real_discount(3)**(-1/4) - 1)
+# print(type(e.find('HH')))
+# print(e.real_discount(1)**(-1/4) - 1)
+# f = e.up
+# print(f)
+# print(e.find('H'))
+# print(f.real_discount(1)**(-1/2)-1)
 # might consider creating an equal property for trees, in fact this could be easy if itertools is used again
