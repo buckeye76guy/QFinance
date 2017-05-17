@@ -1,5 +1,17 @@
 __author__= 'JosiahHounyo'
 
+def unique_cstm(alist):
+    '''
+    simple function for the variables_created list below
+    :param alist: a list
+    :return: list with unique elements
+    '''
+    temp = []
+    for element in alist:
+        if element not in temp:
+            temp.append(element)
+    return temp
+
 class BinaryTree:
     def __init__(self, root, val, **kwargs):
         '''
@@ -381,12 +393,14 @@ def bdt_sympy(N,r):
             ## this function will be more useful when it allows us to export a list or tuple of the variables created
             variables_created.append(up_value)
             variables_created.append(down_value)
+            # by keeping it this way, it is possible to iterate through the list one at a time. But due to the bdt
+            # function in bdtcodde.py, it's useful to keep unique elements only
             ##
 
             tree.insert(node, up_value=up_value, down_value=down_value)
-    return tree
+    return (tree, unique_cstm(variables_created))
 
-# print(bdt_sympy(4,.1))
+# print(bdt_sympy(4,.1)[1])
 
 # a = BinaryTree('R', 12, up_value=24, down_value=6)
 # a.insert('H', up_factor = 2, down_factor = .5)

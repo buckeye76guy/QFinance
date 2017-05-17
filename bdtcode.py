@@ -28,7 +28,8 @@ r_u, r_d, r_uu, r_ud, r_dd, r_uuu, r_uud, r_udd, r_ddd, r_uuuu, r_uuud, r_uudd, 
 # bT.insert('TTT', up_value=r_uddd, down_value=r_dddd)
 
 # using new bdt_sympy function
-bT = bdt_sympy(4, .1) # much simpler!
+mybdt = bdt_sympy(4, .1)
+bT = mybdt[0] # much simpler!
 
 # print(bT.real_discount(2))
 # bt_u = bT.up
@@ -85,7 +86,9 @@ def bdt(Yield, Volatility):
     yield_rates = [bT_u.real_discount(3) ** (-1 / 4) - 1, bT_d.real_discount(3) ** (-1 / 4) - 1]
     eqn14 = -2*sig + sp.log(yield_rates[0]/yield_rates[1])
     def fun(X):
-        variables = [r_u, r_d, r_uu, r_ud, r_dd, r_uuu, r_uud, r_udd, r_ddd, r_uuuu, r_uuud, r_uudd, r_uddd, r_dddd]
+        # this variables object can now be substituted by the second element of bdt_sympy
+        # variables = [r_u, r_d, r_uu, r_ud, r_dd, r_uuu, r_uud, r_udd, r_ddd, r_uuuu, r_uuud, r_uudd, r_uddd, r_dddd]
+        variables = mybdt[1] # substitution in question
         tuples = list(zip(variables, X))
         eqn1_val = np.array([float(np.abs(eqn1.subs(tuples)))])
         eqn2_val = np.array([float(np.abs(eqn2.subs(tuples)))])
