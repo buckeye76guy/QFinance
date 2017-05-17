@@ -335,11 +335,11 @@ def stock_progress(S_0, u, d, N):
     :param N: number of periods
     :return: binary tree with the right nodes and values
     '''
-    assert (N > 0); "N should be at least 1. Otherwise stock progress isn't of interest"
+    assert (N > 0), "N should be at least 1. Otherwise stock progress isn't of interest"
     from itertools import product
     tree = BinaryTree('R', S_0, up_factor = u, down_factor = d)
-    if N == 1:
-        return tree # simply stop here
+    # if N == 1:
+    #     return tree # simply stop here
 
     for i in range(1,N):
         paths = product('HT', repeat = i)
@@ -347,6 +347,46 @@ def stock_progress(S_0, u, d, N):
         for node in paths:
             tree.insert(node, up_factor = u, down_factor = d)
     return tree
+
+def bdt_sympy(N,r):
+    '''
+    This function simply creates an instance of BDTTree that 
+    :param N: number of periods, not the expiration time! 1 less than expiration time
+    :param r: initial rate
+    :return: a BDT Tree with variables as short rates to be determined
+    '''
+    assert (N > 0), "N should be at least 1. Otherwise stock progress isn't of interest"
+    from sympy import Symbol, symbols
+    from itertools import product
+    assert (r > 0 and r < 1), "Please provide a positive rate that is less than 1"
+    r_u, r_d = symbols("r_u r_d", positive=True)
+    tree = BDTTree('R', r, up_value=r_u, down_value=r_d)
+
+    variables_created = [r_u, r_d]
+
+    for i in range(1,N):
+        paths = product('HT', repeat = i)
+        paths = [''.join(node) for node in paths]
+        for node in paths:
+            mylist = list(map(lambda x: 'u' if x == 'H' else 'd', node)) # simply gets the up-up, up-down etc based on node
+
+            mylist_up = mylist + ['u'] # the upper value
+            mylist_up.sort(reverse=True) # sorting since the tree is a recombining tree
+            mylist_dwn = mylist + ['d'] # the lower value
+            mylist_dwn.sort(reverse=True) # techinically since d is added, we do not need to sort but you never know
+
+            up_value = Symbol('r_' + ''.join(mylist_up), positive=True)
+            down_value = Symbol('r_' + ''.join(mylist_dwn), positive=True)
+
+            ## this function will be more useful when it allows us to export a list or tuple of the variables created
+            variables_created.append(up_value)
+            variables_created.append(down_value)
+            ##
+
+            tree.insert(node, up_value=up_value, down_value=down_value)
+    return tree
+
+# print(bdt_sympy(4,.1))
 
 # a = BinaryTree('R', 12, up_value=24, down_value=6)
 # a.insert('H', up_factor = 2, down_factor = .5)
@@ -358,9 +398,6 @@ def stock_progress(S_0, u, d, N):
 
 # print(a)
 # print(a.find('HH'))
-# print(a.find('HT'))
-# print(a.find('TH'))
-# print(a.find('TT'))
 # print(a.depth())
 # print(a.real_discount(3, .4, .1))
 # print(a)
@@ -375,7 +412,7 @@ def stock_progress(S_0, u, d, N):
 # e.insert('HT',up_value=.1606,down_value=.1183)
 # e.insert('TH',up_value=.1606,down_value=.1183)
 # e.insert('TT',up_value=.1183,down_value=.0872)
-# print(b)
+# print(b, '\n', b.depth())
 # print(c)
 # print(d)
 # print(c.real_discount(2, .4, .1))

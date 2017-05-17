@@ -5,27 +5,30 @@ from scipy.optimize import newton_krylov
 from copy import deepcopy
 from trees import *
 
-f_tol = 10**(-7)
+f_tol = 10**(-3)
 r_u, r_d, r_uu, r_ud, r_dd, r_uuu, r_uud, r_udd, r_ddd, r_uuuu, r_uuud, r_uudd, r_uddd, r_dddd = \
     sp.symbols("r_u r_d r_uu r_ud r_dd r_uuu r_uud r_udd r_ddd r_uuuu r_uuud r_uudd r_uddd r_dddd", positive=True)
 
-bT = BDTTree('R', .1, up_value=r_u, down_value=r_d)
-bT.insert('H', up_value=r_uu, down_value=r_ud)
-bT.insert('T', up_value=r_ud, down_value=r_dd)
+# bT = BDTTree('R', .1, up_value=r_u, down_value=r_d)
+# bT.insert('H', up_value=r_uu, down_value=r_ud)
+# bT.insert('T', up_value=r_ud, down_value=r_dd)
+#
+# bT.insert('HH', up_value=r_uuu, down_value=r_uud)
+# bT.insert('HT', up_value=r_uud, down_value=r_udd)
+# bT.insert('TH', up_value=r_uud, down_value=r_udd)
+# bT.insert('TT', up_value=r_udd, down_value=r_ddd)
+#
+# bT.insert('HHH', up_value=r_uuuu, down_value=r_uuud)
+# bT.insert('HHT', up_value=r_uuud, down_value=r_uudd)
+# bT.insert('HTH', up_value=r_uuud, down_value=r_uudd)
+# bT.insert('THH', up_value=r_uuud, down_value=r_uudd)
+# bT.insert('HTT', up_value=r_uudd, down_value=r_uddd)
+# bT.insert('THT', up_value=r_uudd, down_value=r_uddd)
+# bT.insert('TTH', up_value=r_uudd, down_value=r_uddd)
+# bT.insert('TTT', up_value=r_uddd, down_value=r_dddd)
 
-bT.insert('HH', up_value=r_uuu, down_value=r_uud)
-bT.insert('HT', up_value=r_uud, down_value=r_udd)
-bT.insert('TH', up_value=r_uud, down_value=r_udd)
-bT.insert('TT', up_value=r_udd, down_value=r_ddd)
-
-bT.insert('HHH', up_value=r_uuuu, down_value=r_uuud)
-bT.insert('HHT', up_value=r_uuud, down_value=r_uudd)
-bT.insert('HTH', up_value=r_uuud, down_value=r_uudd)
-bT.insert('THH', up_value=r_uuud, down_value=r_uudd)
-bT.insert('HTT', up_value=r_uudd, down_value=r_uddd)
-bT.insert('THT', up_value=r_uudd, down_value=r_uddd)
-bT.insert('TTH', up_value=r_uudd, down_value=r_uddd)
-bT.insert('TTT', up_value=r_uddd, down_value=r_dddd)
+# using new bdt_sympy function
+bT = bdt_sympy(4, .1) # much simpler!
 
 # print(bT.real_discount(2))
 # bt_u = bT.up
